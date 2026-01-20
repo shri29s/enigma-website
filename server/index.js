@@ -17,6 +17,9 @@ connectDB().then(() => {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust first proxy (Vercel) for rate limiting and IP detection
+app.set('trust proxy', 1);
+
 // General Middleware
 app.use(helmet());
 app.use(
