@@ -8,17 +8,21 @@ const { basicLimiter, authLimiter } = require("./middleware/rateLimiter");
 const seedAdmin = require("./utils/seeder");
 require("dotenv").config();
 
-// Connect to MongoDB
-connectDB().then(() => {
-  // 🚀 Seed admin after DB connection is successful
-  seedAdmin();
-});
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Connect to MongoDB (lazy connection for serverless)
+let isConnected = false;
+const ensureDbConnection = async () => {
+  if (!isConnected) {
+    await connectDB();
+    await seedAdmin();
+    isConnected = true;
+  }
+};
+
 // Trust first proxy (Vercel) for rate limiting and IP detection
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 
 // General Middleware
 app.use(helmet());
@@ -45,6 +49,17 @@ app.use((req, res, next) => {
 // Static file serving for the 'uploads' folder
 // This line MUST be here for your images to be accessible
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// Ensure DB connection on each request
+app.use(async (req, res, next) => {
+  try {
+    await ensureDbConnection();
+    next();
+  } catch (error) {
+    console.error("Database connection error:", error);
+    res.status(503).json({ message: "Service temporarily unavailable" });
+  }
+});
 
 // Rate limiting middleware
 app.use(basicLimiter);
@@ -90,8 +105,11 @@ app.use("*", (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+// Only call app.listen() when not in serverless environment
+if (process.env.VERCEL !== "1") {
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
 
 module.exports = app;
