@@ -19,7 +19,15 @@ const PORT = process.env.PORT || 3000;
 
 // General Middleware
 app.use(helmet());
-app.use(cors());
+app.use(
+  cors({
+    origin:
+      process.env.NODE_ENV === "production"
+        ? [process.env.FRONTEND_URL, "https://your-frontend.vercel.app"]
+        : "*",
+    credentials: true,
+  }),
+);
 app.use(morgan("combined"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
