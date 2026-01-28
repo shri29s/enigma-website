@@ -75,14 +75,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = async (email: string, password: string) => {
     setError(null);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        },
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`;
+
+      // Debug: Log the API URL being used
+      console.log("🔍 Login API URL:", apiUrl);
+      console.log(
+        "🔍 API Base URL env var:",
+        process.env.NEXT_PUBLIC_API_BASE_URL,
       );
+
+      // Check if API URL is configured
+      if (
+        !process.env.NEXT_PUBLIC_API_BASE_URL ||
+        process.env.NEXT_PUBLIC_API_BASE_URL === "undefined"
+      ) {
+        throw new Error(
+          "❌ API URL not configured! Set NEXT_PUBLIC_API_BASE_URL in your .env.local file or Vercel environment variables.",
+        );
+      }
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
       // Check if response is JSON
       const contentType = response.headers.get("content-type");
@@ -99,6 +115,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       handleAuthSuccess(data.data.token);
     } catch (err: any) {
+      // Enhanced error message for network errors
+      if (err.message?.includes("fetch") || err.name === "TypeError") {
+        const detailedError = `Network Error: Cannot connect to API server.\n\nAPI URL: ${process.env.NEXT_PUBLIC_API_BASE_URL}\n\nPossible causes:\n1. NEXT_PUBLIC_API_BASE_URL is not set correctly\n2. Backend server is not running or unreachable\n3. CORS is blocking the request\n\nCheck browser console for more details.`;
+        setError(detailedError);
+        console.error("❌ Login Network Error:", err);
+        throw new Error(detailedError);
+      }
       setError(err.message || "An unknown error occurred.");
       throw err;
     }
@@ -107,14 +130,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const register = async (userData: any) => {
     setError(null);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/register`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(userData),
-        },
-      );
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/register`;
+
+      // Debug: Log the API URL being used
+      console.log("🔍 Register API URL:", apiUrl);
+
+      // Check if API URL is configured
+      if (
+        !process.env.NEXT_PUBLIC_API_BASE_URL ||
+        process.env.NEXT_PUBLIC_API_BASE_URL === "undefined"
+      ) {
+        throw new Error(
+          "❌ API URL not configured! Set NEXT_PUBLIC_API_BASE_URL in your .env.local file or Vercel environment variables.",
+        );
+      }
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData),
+      });
 
       // Check if response is JSON
       const contentType = response.headers.get("content-type");
@@ -131,6 +166,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       handleAuthSuccess(data.data.token);
     } catch (err: any) {
+      // Enhanced error message for network errors
+      if (err.message?.includes("fetch") || err.name === "TypeError") {
+        const detailedError = `Network Error: Cannot connect to API server.\n\nAPI URL: ${process.env.NEXT_PUBLIC_API_BASE_URL}\n\nPossible causes:\n1. NEXT_PUBLIC_API_BASE_URL is not set correctly\n2. Backend server is not running or unreachable\n3. CORS is blocking the request`;
+        setError(detailedError);
+        console.error("❌ Register Network Error:", err);
+        throw new Error(detailedError);
+      }
       // Set a generic error message, but re-throw the full error object
       // so the signup page can access the detailed validation 'errors' array.
       setError(err.message || "An unknown error occurred.");

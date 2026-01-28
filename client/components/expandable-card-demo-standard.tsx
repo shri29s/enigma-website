@@ -51,6 +51,24 @@ export default function UpcomingEvents() {
       setError(null);
       try {
         const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/events?upcoming=true`;
+
+        // Debug: Log the API URL being used
+        console.log("🔍 Events API URL:", apiUrl);
+        console.log(
+          "🔍 API Base URL env var:",
+          process.env.NEXT_PUBLIC_API_BASE_URL,
+        );
+
+        // Check if API URL is configured
+        if (
+          !process.env.NEXT_PUBLIC_API_BASE_URL ||
+          process.env.NEXT_PUBLIC_API_BASE_URL === "undefined"
+        ) {
+          throw new Error(
+            "❌ API URL not configured! Set NEXT_PUBLIC_API_BASE_URL in your .env.local file or Vercel environment variables.",
+          );
+        }
+
         const response = await fetch(apiUrl);
 
         // Check if response is JSON
@@ -80,8 +98,19 @@ export default function UpcomingEvents() {
           setEvents([]);
         }
       } catch (e: any) {
-        setError(e.message);
-        console.error("Error fetching events:", e);
+        // Enhanced error message for network errors
+        if (e.message?.includes("fetch") || e.name === "TypeError") {
+          const detailedError = `Cannot connect to API server at ${process.env.NEXT_PUBLIC_API_BASE_URL}. Check if:\n1. NEXT_PUBLIC_API_BASE_URL is set correctly\n2. Backend is running\n3. CORS is configured`;
+          setError(detailedError);
+          console.error("❌ Events Network Error:", e);
+          console.error(
+            "❌ Attempted URL:",
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/events?upcoming=true`,
+          );
+        } else {
+          setError(e.message);
+          console.error("Error fetching events:", e);
+        }
       } finally {
         setIsLoading(false);
       }
