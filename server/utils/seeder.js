@@ -40,28 +40,30 @@ const seedAdmin = async () => {
     }
 
     /* -----------------------------
-       3. Ensure Member Profile
+   3. Ensure Member Profile (ATOMIC)
     ------------------------------ */
-    const existingMember = await Member.findOne({ user: adminUser._id });
-
-    if (!existingMember) {
-      await Member.create({
-        user: adminUser._id,
-        displayName: adminUser.name,
-        primaryRole: {
-          position: "president",
-          domain: coreDomain._id,
-        },
-        roles: [
-          {
+    await Member.updateOne(
+      { user: adminUser._id }, // unique index field
+      {
+        $setOnInsert: {
+          user: adminUser._id,
+          displayName: adminUser.name,
+          primaryRole: {
             position: "president",
             domain: coreDomain._id,
-            isActive: true,
-            startDate: new Date(),
           },
-        ],
-      });
-    }
+          roles: [
+            {
+              position: "president",
+              domain: coreDomain._id,
+              isActive: true,
+              startDate: new Date(),
+            },
+          ],
+        },
+      },
+      { upsert: true },
+    );
 
     console.log("✅ Admin seeding complete (idempotent).");
   } catch (error) {
