@@ -5,52 +5,68 @@ const seedAdmin = async () => {
   try {
     const adminEmail = process.env.DEFAULT_ADMIN_EMAIL?.trim();
     const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD?.trim();
+    const adminName = process.env.DEFAULT_ADMIN_NAME?.trim() || "Main Admin";
 
+    // If env vars not set, silently skip seeding
     if (!adminEmail || !adminPassword) return;
 
-    // 1. Cleanup
-    const existingUser = await User.findOne({ email: adminEmail });
-    if (existingUser) {
-      await Member.deleteOne({ user: existingUser._id });
-      await User.deleteOne({ _id: existingUser._id });
-    }
-
-    // 2. Ensure Domain
+    /* -----------------------------
+       1. Ensure CORE Domain
+    ------------------------------ */
     let coreDomain = await Domain.findOne({ code: "CORE" });
+
     if (!coreDomain) {
-      coreDomain = new Domain({ name: "Core", code: "CORE", color: "#00FF00" });
-      await coreDomain.save();
+      coreDomain = await Domain.create({
+        name: "Core",
+        code: "CORE",
+        color: "#00FF00",
+        description: "Core administrative and leadership domain",
+      });
     }
 
-    // 3. Create User - DO NOT BCRYPT HERE
-    // Your model's pre-save hook will handle the hashing automatically.
-    const newAdminUser = new User({
-      name: process.env.DEFAULT_ADMIN_NAME?.trim() || "Main Admin",
-      email: adminEmail,
-      password: adminPassword, // Raw password goes here
-      role: "admin",
-    });
+    /* -----------------------------
+       2. Ensure Admin User
+       (DO NOT DELETE EXISTING USER)
+    ------------------------------ */
+    let adminUser = await User.findOne({ email: adminEmail });
 
-    const savedUser = await newAdminUser.save();
+    if (!adminUser) {
+      adminUser = await User.create({
+        name: adminName,
+        email: adminEmail,
+        password: adminPassword, // raw password (hashed by model hook)
+        role: "admin",
+      });
+    }
 
-    // 4. Create Member Profile
-    await new Member({
-      user: savedUser._id,
-      displayName: savedUser.name,
-      primaryRole: { position: "president", domain: coreDomain._id },
-      roles: [
-        {
+    /* -----------------------------
+       3. Ensure Member Profile
+    ------------------------------ */
+    const existingMember = await Member.findOne({ user: adminUser._id });
+
+    if (!existingMember) {
+      await Member.create({
+        user: adminUser._id,
+        displayName: adminUser.name,
+        primaryRole: {
           position: "president",
           domain: coreDomain._id,
-          isActive: true,
-          startDate: new Date(),
         },
-      ],
-    }).save();
+        roles: [
+          {
+            position: "president",
+            domain: coreDomain._id,
+            isActive: true,
+            startDate: new Date(),
+          },
+        ],
+      });
+    }
 
-    console.log("✨ Admin seeded and hashed by Model.");
+    console.log("✅ Admin seeding complete (idempotent).");
   } catch (error) {
     console.error("❌ Seeder Error:", error);
   }
 };
+
 module.exports = seedAdmin;
