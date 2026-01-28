@@ -1,0 +1,5 @@
+[33mcommit 18a4723705e6ea6f76297689417d991dfd4b34c0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdeployment[m[33m, [m[1;31mdeploy/main[m[33m)[m
+Author: shri29s <shricharan.r24@iiits.in>
+Date:   Tue Jan 20 21:42:22 2026 +0530
+
+    Fix: Enable trust proxy for Vercel deployment
