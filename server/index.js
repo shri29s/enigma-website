@@ -49,22 +49,38 @@ app.use(
         return callback(null, true);
       }
 
-      // In production, allow configured frontend URLs
-      const allowedOrigins = process.env.FRONTEND_URL
-        ? process.env.FRONTEND_URL.split(",").map((url) => url.trim())
-        : [];
+      // In production on Vercel, allow Vercel domain patterns + configured origins
+      const allowedOrigins = [
+        // Allow all *.vercel.app domains (covers all Vercel deployments)
+        /^https:\/\/.*\.vercel\.app$/,
+        // Allow localhost for local testing
+        /^http:\/\/localhost(:\d+)?$/,
+        // Allow configured frontend URLs if set
+        ...(process.env.FRONTEND_URL
+          ? process.env.FRONTEND_URL.split(",").map((url) => url.trim())
+          : []),
+      ];
 
       // Allow requests with no origin (mobile apps, Postman, etc.)
-      if (!origin) return callback(null, true);
+      if (!origin) {
+        console.log("✅ CORS: Allowing request with no origin");
+        return callback(null, true);
+      }
 
-      if (
-        allowedOrigins.indexOf(origin) !== -1 ||
-        allowedOrigins.includes("*")
-      ) {
+      // Check if origin is allowed
+      const isAllowed = allowedOrigins.some((allowedOrigin) => {
+        if (allowedOrigin instanceof RegExp) {
+          return allowedOrigin.test(origin);
+        }
+        return allowedOrigin === origin;
+      });
+
+      if (isAllowed) {
+        console.log(`✅ CORS: Origin ${origin} allowed`);
         callback(null, true);
       } else {
         console.warn(
-          `CORS blocked origin: ${origin}. Allowed: ${allowedOrigins.join(", ")}`,
+          `❌ CORS: Blocked origin ${origin}. Allowed patterns: *.vercel.app, localhost, ${process.env.FRONTEND_URL || "none"}`,
         );
         callback(new Error("Not allowed by CORS"));
       }
