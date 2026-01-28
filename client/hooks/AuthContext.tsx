@@ -81,8 +81,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
-        }
+        },
       );
+
+      // Check if response is JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error(
+          `Server returned non-JSON response. Status: ${response.status}. This might be a CORS or server configuration issue.`,
+        );
+      }
+
       const data = await response.json();
       if (!response.ok) {
         // ✅ FIX: Throw the entire 'data' object which contains the message
@@ -104,8 +113,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(userData),
-        }
+        },
       );
+
+      // Check if response is JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error(
+          `Server returned non-JSON response. Status: ${response.status}. This might be a CORS or server configuration issue.`,
+        );
+      }
+
       const data = await response.json();
       if (!response.ok) {
         // ✅ FIX: Throw the entire 'data' object, which contains the 'errors' array

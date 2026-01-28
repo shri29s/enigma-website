@@ -40,10 +40,35 @@ const ensureDbReady = async () => {
 ----------------------------------- */
 app.use(helmet());
 
+// CORS Configuration - allow frontend to access backend
 app.use(
   cors({
-    origin:
-      process.env.NODE_ENV === "production" ? [process.env.FRONTEND_URL] : "*",
+    origin: (origin, callback) => {
+      // In development, allow all origins
+      if (process.env.NODE_ENV !== "production") {
+        return callback(null, true);
+      }
+
+      // In production, allow configured frontend URLs
+      const allowedOrigins = process.env.FRONTEND_URL
+        ? process.env.FRONTEND_URL.split(",").map((url) => url.trim())
+        : [];
+
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
+
+      if (
+        allowedOrigins.indexOf(origin) !== -1 ||
+        allowedOrigins.includes("*")
+      ) {
+        callback(null, true);
+      } else {
+        console.warn(
+          `CORS blocked origin: ${origin}. Allowed: ${allowedOrigins.join(", ")}`,
+        );
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   }),
 );

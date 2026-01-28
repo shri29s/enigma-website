@@ -8,7 +8,7 @@ import Link from "next/link";
 // --- Custom Hook to detect clicks outside an element ---
 export const useOutsideClick = (
   ref: React.RefObject<HTMLDivElement>,
-  callback: () => void
+  callback: () => void,
 ) => {
   useEffect(() => {
     const listener = (event: MouseEvent | TouchEvent) => {
@@ -52,6 +52,15 @@ export default function UpcomingEvents() {
       try {
         const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/events?upcoming=true`;
         const response = await fetch(apiUrl);
+
+        // Check if response is JSON
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error(
+            `Server returned non-JSON response. Status: ${response.status}. Check if API_BASE_URL is correct: ${process.env.NEXT_PUBLIC_API_BASE_URL}`,
+          );
+        }
+
         if (!response.ok) {
           throw new Error(`Failed to fetch events: ${response.statusText}`);
         }
@@ -66,7 +75,7 @@ export default function UpcomingEvents() {
         } else {
           console.warn(
             "API response was successful but did not contain an events array:",
-            apiResponse
+            apiResponse,
           );
           setEvents([]);
         }
@@ -106,7 +115,7 @@ export default function UpcomingEvents() {
 
     if (!token || !user) {
       setRsvpError(
-        "You must be logged in to RSVP. Please log in or register first."
+        "You must be logged in to RSVP. Please log in or register first.",
       );
       setRsvpStatus("error");
       return;
@@ -129,7 +138,7 @@ export default function UpcomingEvents() {
       const result = await response.json();
       if (!response.ok) {
         throw new Error(
-          result.message || "Failed to RSVP. You may already be registered."
+          result.message || "Failed to RSVP. You may already be registered.",
         );
       }
       setRsvpStatus("success");
@@ -232,8 +241,8 @@ export default function UpcomingEvents() {
                       {rsvpStatus === "submitting"
                         ? "Submitting..."
                         : rsvpStatus === "success"
-                        ? "✓ RSVP'd Successfully"
-                        : "RSVP Now"}
+                          ? "✓ RSVP'd Successfully"
+                          : "RSVP Now"}
                     </button>
                     {rsvpStatus === "error" && (
                       <p className="text-red-400 text-sm mt-2 text-center">
